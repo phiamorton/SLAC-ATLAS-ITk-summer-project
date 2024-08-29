@@ -1,3 +1,6 @@
+#this code copied from the Pi in the atlas clean room in B33
+#the pi is pi@dcs-pi-lp
+
 import time
 import math
 import smbus
