@@ -1,0 +1,50 @@
+import time
+import math
+import smbus
+from datetime import datetime
+import librtd
+from influxdb import InfluxDBClient
+
+host = '192.168.1.1'
+username ='atlas'
+password = #see concur
+database = 'lab'
+port = 8086
+mps =1
+rep = 'HIGH'
+
+#lots of code taken from Nathan  https://gitlab.cern.ch/nyoung/dcs-interlock/-/blob/Arduino+Pi/Interlock/RTD_SHT85.py?ref_type=heads#L11  
+run=True
+while run == True:
+        time.sleep(1) #how often to take data
+        data_values=dict()
+        for channel in range(2,17): 
+                if channel <=8:
+                        hat=0
+                        temp=librtd.get(hat,channel)
+                        res=librtd.getRes(hat,channel)
+                        channel_name = "rtd_%02u" % channel
+                if channel >8:
+                        hat=1
+                        channel_hat2 = channel -8
+                        temp=librtd.get(hat,channel_hat2)
+                        #print(channel, temp)
+
+                        res=librtd.getRes(hat,channel_hat2)
+                        #print(channel, res)
+
+                        channel_name = "rtd_hat2_%02u" % channel_hat2
+                data_values[channel_name] = temp
+                data_values['resistance']=res
+                #print(data_values)
+
+        json_body = [{
+                "measurement": "rtd_dummy_ring_test",
+                "tags": {"location":"lab"},
+                "time" : datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "fields": data_values
+        }]
+
+        db_client = InfluxDBClient(host, port, username, password, database)
+        db_client.write_points(json_body)
+        #print('Wrote RTD data to DB')
